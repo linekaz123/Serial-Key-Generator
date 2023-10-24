@@ -9,6 +9,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/serialsets")
+@CrossOrigin(origins = "http://localhost:4200")
+
 public class SerialSetController {
 
     @Autowired

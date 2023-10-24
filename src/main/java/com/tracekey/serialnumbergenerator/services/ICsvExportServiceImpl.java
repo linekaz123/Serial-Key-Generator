@@ -7,27 +7,30 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 @Service
-public class ICsvExportServiceImpl implements ICsvExportService{
+public class ICsvExportServiceImpl implements ICsvExportService {
 
+    public void exportToCsv(SerialSet serialSet) {
+        // Include timestamp in the file name to make it unique
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String fileName = "exported_serial_numbers_" + serialSet.getName() + "_" + timeStamp + ".csv";
 
-        public void exportToCsv(SerialSet serialSet) {
-            String fileName = "exported_serial_numbers_" + serialSet.getName() + ".csv";
+        try (FileWriter writer = new FileWriter(fileName)) {
+            // Add CSV header if needed
+            writer.append("Serial Number\n");
 
-            try (FileWriter writer = new FileWriter(fileName)) {
-                // Add CSV header if needed
-                writer.append("Serial Number\n");
-
-                for (SerialNumber serialNumber : serialSet.getSerialNumbers()) {
-                    writer.append(serialNumber.getValue());
-                    writer.append("\n");
-                }
-
-                writer.flush();
-            } catch (IOException e) {
-                throw new CsvExportException("Error exporting serial numbers to CSV", e);
+            for (SerialNumber serialNumber : serialSet.getSerialNumbers()) {
+                writer.append(serialNumber.getValue());
+                writer.append("\n");
             }
+
+            writer.flush();
+        } catch (IOException e) {
+            throw new CsvExportException("Error exporting serial numbers to CSV", e);
         }
     }
+}

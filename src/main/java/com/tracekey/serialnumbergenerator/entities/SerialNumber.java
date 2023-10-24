@@ -1,6 +1,8 @@
 package com.tracekey.serialnumbergenerator.entities;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import java.util.List;
 
@@ -16,6 +18,7 @@ public class SerialNumber {
     private String value;
 
     @ManyToOne(cascade = CascadeType.ALL)
+    @JsonIgnore
     private SerialSet serialSet;
 
     public SerialNumber(String value) {
