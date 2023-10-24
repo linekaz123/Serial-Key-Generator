@@ -148,15 +148,14 @@ public class ISerialSetServiceImpl implements ISerialSetService {
 
         return serialNumberBuilder.toString();
     }
-    @Override
     public String removeExclusions(String input, String exclusions) {
         if (input == null || exclusions == null) {
             return input;
         }
 
-        for (char exclusion : exclusions.toCharArray()) {
+        for (String exclusion : exclusions.split(",")) {
             if (input != null) {
-                input = input.replace(String.valueOf(exclusion), "");
+                input = input.replace(exclusion, "");
             }
         }
         return input;

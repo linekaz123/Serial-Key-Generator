@@ -32,7 +32,7 @@ public class SerialSet {
     private boolean lowerCase;
     private String exclusions;
 
-    @OneToMany(mappedBy = "serialSet")
+    @OneToMany(mappedBy = "serialSet",cascade = CascadeType.REMOVE)
     private List<SerialNumber> serialNumbers;
 
 
