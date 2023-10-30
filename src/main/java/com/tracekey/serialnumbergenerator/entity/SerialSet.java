@@ -26,7 +26,7 @@ public class SerialSet {
 
     private int quantity;
 
-    private LocalDateTime createdOn = LocalDateTime.now();
+    private LocalDateTime createdDate;
 
     private int serialLength;
 
@@ -43,4 +43,12 @@ public class SerialSet {
     @OneToMany(mappedBy = "serialSet", fetch=FetchType.LAZY)
     @JsonManagedReference
     private List<SerialNumber> serialNumbers = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        // Automatic initialization before persisting
+        if (createdDate == null) {
+            createdDate = LocalDateTime.now();
+        }
+    }
 }
