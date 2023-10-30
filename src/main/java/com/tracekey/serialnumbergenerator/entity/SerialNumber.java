@@ -29,5 +29,11 @@ public class SerialNumber {
         this.value = value;
     }
 
-
+    @PrePersist
+    protected void onCreate() {
+        // Automatic initialization before persisting
+        if (createdDate == null) {
+            createdDate = LocalDateTime.now();
+        }
+    }
 }
