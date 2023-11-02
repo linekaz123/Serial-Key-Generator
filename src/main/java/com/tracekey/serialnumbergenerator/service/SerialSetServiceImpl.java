@@ -26,36 +26,81 @@ import java.util.stream.IntStream;
 @Slf4j
 public class SerialSetServiceImpl implements ISerialSetService {
 
-    // Character sets
+    /**
+     * Character set containing numeric characters.
+     */
     private static final String NUMERIC_CHARACTERS = "0123456789";
+
+    /**
+     * Character set containing lowercase alphabetical characters.
+     */
     private static final String LOWERCASE_CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
+
+    /**
+     * Character set containing uppercase alphabetical characters.
+     */
     private static final String UPPERCASE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    // Error messages
+    /**
+     * Error message for invalid length configuration.
+     */
     private static final String LENGTH_CONFIG_ERROR_MESSAGE = "Invalid length configuration";
+
+    /**
+     * Error message for a duplicate serial set name.
+     */
     private static final String DUPLICATE_NAME_ERROR_MESSAGE = "Serial set with the same name already exists";
+
+    /**
+     * Error message for exceeding the maximum limit of serial numbers.
+     */
     private static final String MAX_LIMIT_ERROR_MESSAGE = "Request exceeds the maximum limit of serial numbers";
+
+    /**
+     * Template for error message when a serial set is not found.
+     */
     private static final String NOT_FOUND_ERROR_MESSAGE_TEMPLATE = "Serial set not found with ID: %d";
 
-    // Repositories for serial sets and serial numbers
+    /**
+     * Repository for serial sets.
+     */
     private final SerialSetRepository serialSetRepository;
+
+    /**
+     * Repository for serial numbers.
+     */
     private final SerialNumberRepository serialNumberRepository;
 
-    // Configuration values loaded from properties
+    /**
+     * Minimum allowed serial length loaded from properties.
+     */
     @Value("${serialNumber.min.serial.length}")
     private int minSerialLength;
 
+    /**
+     * Maximum allowed serial length loaded from properties.
+     */
     @Value("${serialNumber.max.serial.length}")
     private int maxSerialLength;
 
+    /**
+     * Maximum allowed random length loaded from properties.
+     */
     @Value("${serialNumber.max.random.length}")
     private int maxRandomLength;
 
+    /**
+     * Maximum allowed serial quantity loaded from properties.
+     */
     @Value("${serialSet.max.serial.quantity}")
     private int maxSerialQuantity;
 
+    /**
+     * Batch size for processing serial numbers loaded from properties.
+     */
     @Value("${serialSet.batchSize}")
     private int batchSize;
+
 
     /**
      * Constructor for injecting repositories.

@@ -22,24 +22,19 @@ import java.util.Date;
 @Slf4j
 public class CsvExportServiceImpl implements ICsvExportService {
 
-    // Configuration values loaded from properties
+    /**
+     * Directory for exporting CSV files property.
+     */
     @Value("${csv.export.directory}")
     private String exportDirectory;
 
-    // Error messages
     private static final String EXPORT_ERROR_MESSAGE = "Error exporting serial numbers to CSV";
     private static final String NOT_FOUND_ERROR_MESSAGE = "Serial set not found for export";
     private static final String NO_SERIAL_NUMBERS_ERROR_MESSAGE = "No serial numbers created for this serial set";
     private static final String INCOMPLETE_GENERATION_ERROR_MESSAGE = "Serial set numbers generation is incomplete";
 
-    // Repository for serial sets
     private final SerialSetRepository serialSetRepository;
 
-    /**
-     * Constructor for injecting the serial set repository.
-     *
-     * @param serialSetRepository Repository for serial sets
-     */
     public CsvExportServiceImpl(SerialSetRepository serialSetRepository) {
         this.serialSetRepository = serialSetRepository;
     }
