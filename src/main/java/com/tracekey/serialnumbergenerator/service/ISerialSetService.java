@@ -1,19 +1,21 @@
 package com.tracekey.serialnumbergenerator.service;
 
 import com.tracekey.serialnumbergenerator.entity.SerialSet;
+import com.tracekey.serialnumbergenerator.dto.SerialSetRequest;
+import com.tracekey.serialnumbergenerator.dto.SerialSetResponse;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface ISerialSetService {
 
-    SerialSet createSerialSet(SerialSet serialSet);
+    SerialSetResponse createSerialSet(SerialSetRequest serialSet);
 
-    List<SerialSet> getAllSerialSets();
+    List<SerialSetResponse> getAllSerialSets();
 
-    SerialSet getSerialSetById(Long id);
+    SerialSetResponse getSerialSetByName(String name);
 
-    boolean deleteSerialSetById(Long id);
+    boolean deleteSerialSetByName(String name);
 
     CompletableFuture<Void> generateSerialNumbersAsync(SerialSet serialSet);
 
@@ -24,7 +26,7 @@ public interface ISerialSetService {
     void generateSerialNumbers(SerialSet serialSet);
 
     boolean validateSerialSet(SerialSet serialSet);
-    SerialSet SaveSerialSet(SerialSet serialSet);
+    SerialSet saveSerialSet(SerialSet serialSet);
 
     String generateSingleSerial(SerialSet serialSet,String characters);
 

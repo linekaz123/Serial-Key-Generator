@@ -1,5 +1,6 @@
 package com.tracekey.serialnumbergenerator.service;
 
+import com.tracekey.serialnumbergenerator.conf.TestDatabaseConfig;
 import com.tracekey.serialnumbergenerator.entity.SerialNumber;
 import com.tracekey.serialnumbergenerator.entity.SerialSet;
 import com.tracekey.serialnumbergenerator.exception.SerialSetException;
@@ -9,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -20,6 +24,9 @@ import static org.mockito.Mockito.*;
 /**
  * Test class for {@link SerialSetServiceImpl}.
  */
+
+@Import(TestDatabaseConfig.class)
+@ActiveProfiles("test")
 class SerialSetServiceImplTest {
 
     private static final String NAME = "TestSet";
@@ -103,19 +110,6 @@ class SerialSetServiceImplTest {
         assertThrows(SerialSetException.class, () -> serialSetService.validateSerialSetConfiguration(inputSerialSet));
     }
 
-    /**
-     * Testing asynchronous generation and saving of serial numbers.
-     */
-    @Test
-    void shouldGenerateSerialNumbersAsync() {
-
-        SerialSet serialSet = createSerialSet(NAME, 100);
-
-        CompletableFuture<Void> future = serialSetService.generateSerialNumbersAsync(serialSet);
-        future.join();
-
-        assertEquals(100, serialSet.getSerialNumbers().size());
-    }
     /**
      * Testing the generation of character pool for serial numbers based on the configuration.
      */

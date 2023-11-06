@@ -5,17 +5,19 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "serial_set")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class SerialSet {
+public class SerialSet implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

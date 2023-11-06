@@ -1,5 +1,6 @@
 package com.tracekey.serialnumbergenerator.service;
 
+import com.tracekey.serialnumbergenerator.conf.TestDatabaseConfig;
 import com.tracekey.serialnumbergenerator.entity.SerialNumber;
 import com.tracekey.serialnumbergenerator.entity.SerialSet;
 import com.tracekey.serialnumbergenerator.exception.CustomCsvExportException;
@@ -10,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
@@ -23,6 +27,8 @@ import static org.mockito.Mockito.when;
 /**
  * Test class for {@link CsvExportServiceImpl}.
  */
+@Import(TestDatabaseConfig.class)
+@ActiveProfiles("test")
 class CsvExportServiceImplTest {
 
     private static final String SERIAL_SET_NAME = "TestSet";

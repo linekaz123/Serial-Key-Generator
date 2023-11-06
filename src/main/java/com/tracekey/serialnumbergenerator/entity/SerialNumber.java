@@ -4,14 +4,16 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "serial_number")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SerialNumber {
+public class SerialNumber implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +29,11 @@ public class SerialNumber {
 
     public SerialNumber(String value) {
         this.value = value;
+    }
+
+    public SerialNumber(String value, SerialSet serialSet) {
+        this.value = value;
+        this.serialSet = serialSet;
     }
 
     @PrePersist

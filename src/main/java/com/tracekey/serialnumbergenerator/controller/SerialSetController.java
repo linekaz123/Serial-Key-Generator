@@ -1,6 +1,7 @@
 package com.tracekey.serialnumbergenerator.controller;
 
-import com.tracekey.serialnumbergenerator.entity.SerialSet;
+import com.tracekey.serialnumbergenerator.dto.SerialSetRequest;
+import com.tracekey.serialnumbergenerator.dto.SerialSetResponse;
 import com.tracekey.serialnumbergenerator.service.ICsvExportService;
 import com.tracekey.serialnumbergenerator.service.ISerialSetService;
 
@@ -15,21 +16,25 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/serialsets")
 @CrossOrigin(origins = "http://localhost:4200")
-@AllArgsConstructor
 public class SerialSetController {
 
     private final ISerialSetService serialSetService;
     private final ICsvExportService csvExportService;
 
+    public SerialSetController(ISerialSetService serialSetService, ICsvExportService csvExportService) {
+        this.serialSetService = serialSetService;
+        this.csvExportService = csvExportService;
+    }
+
     /**
      * Endpoint to create a new SerialSet with serial numbers.
      *
-     * @param serialSet The SerialSet to be created.
+     * @param serialSetRequest The SerialSetRequest containing the information for the new SerialSet.
      * @return The created SerialSet.
      */
     @PostMapping("/create")
-    public SerialSet createSerialSet(@RequestBody SerialSet serialSet) {
-        return serialSetService.createSerialSet(serialSet);
+    public SerialSetResponse createSerialSet(@RequestBody SerialSetRequest serialSetRequest) {
+        return serialSetService.createSerialSet(serialSetRequest);
     }
 
     /**
@@ -38,30 +43,30 @@ public class SerialSetController {
      * @return List of all SerialSets.
      */
     @GetMapping("/all")
-    public List<SerialSet> getAllSerialSets() {
+    public List<SerialSetResponse> getAllSerialSets() {
         return serialSetService.getAllSerialSets();
     }
 
     /**
-     * Endpoint to retrieve a SerialSet by its ID.
+     * Endpoint to retrieve a SerialSet by its name.
      *
-     * @param id The ID of the SerialSet to retrieve.
+     * @param name The name of the SerialSet to retrieve.
      * @return The retrieved SerialSet.
      */
-    @GetMapping("/{id}")
-    public SerialSet getSerialSetById(@PathVariable Long id) {
-        return serialSetService.getSerialSetById(id);
+    @GetMapping("/{name}")
+    public SerialSetResponse getSerialSetByname(@PathVariable String name) {
+        return serialSetService.getSerialSetByName(name);
     }
 
     /**
-     * Endpoint to delete a SerialSet by its ID.
+     * Endpoint to delete a SerialSet by its name.
      *
-     * @param id The ID of the SerialSet to delete.
+     * @param name The name of the SerialSet to delete.
      * @return True if the deletion is successful, false otherwise.
      */
     @DeleteMapping("/delete/{id}")
-    public boolean deleteSerialSetById(@PathVariable Long id) {
-        return serialSetService.deleteSerialSetById(id);
+    public boolean deleteSerialSetByName(@PathVariable String name) {
+        return serialSetService.deleteSerialSetByName(name);
     }
 
     /**

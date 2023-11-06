@@ -3,6 +3,9 @@ package com.tracekey.serialnumbergenerator.service;
 import com.tracekey.serialnumbergenerator.entity.SerialNumber;
 import com.tracekey.serialnumbergenerator.entity.SerialSet;
 import com.tracekey.serialnumbergenerator.exception.SerialSetException;
+import com.tracekey.serialnumbergenerator.mapper.SerialSetMapper;
+import com.tracekey.serialnumbergenerator.dto.SerialSetRequest;
+import com.tracekey.serialnumbergenerator.dto.SerialSetResponse;
 import com.tracekey.serialnumbergenerator.repository.SerialNumberRepository;
 import com.tracekey.serialnumbergenerator.repository.SerialSetRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -72,6 +74,12 @@ public class SerialSetServiceImpl implements ISerialSetService {
     private final SerialNumberRepository serialNumberRepository;
 
     /**
+     * Mapper for serial numbers.
+     */
+    private final SerialSetMapper serialSetMapper;
+
+
+    /**
      * Minimum allowed serial length loaded from properties.
      */
     @Value("${serialNumber.min.serial.length}")
@@ -107,27 +115,29 @@ public class SerialSetServiceImpl implements ISerialSetService {
      *
      * @param serialSetRepository     Repository for serial sets
      * @param serialNumberRepository  Repository for serial numbers
+     * @param serialSetMapper         Mapper for serial numbers
      */
-    public SerialSetServiceImpl(final SerialSetRepository serialSetRepository, final SerialNumberRepository serialNumberRepository) {
+    public SerialSetServiceImpl(final SerialSetRepository serialSetRepository, final SerialNumberRepository serialNumberRepository,final SerialSetMapper serialSetMapper) {
         this.serialSetRepository = serialSetRepository;
         this.serialNumberRepository = serialNumberRepository;
+        this.serialSetMapper=serialSetMapper;
     }
 
     /**
      * Creates a new serial set.
      *
-     * @param serialSet The serial set to be created
      * @return The created serial set
      */
     @Override
-    public SerialSet createSerialSet(final SerialSet serialSet) {
-        log.info("Creating serial set: {}", serialSet.getName());
+    public SerialSetResponse createSerialSet(final SerialSetRequest serialSetRequest) {
+        log.info("Creating serial set: {}", serialSetRequest.getName());
+        SerialSet serialSet = serialSetMapper.mapRequestDtoToEntity(serialSetRequest);
         validateSerialSetConfiguration(serialSet);
         validateSerialSet(serialSet);
-        SaveSerialSet(serialSet);
+        saveSerialSet(serialSet);
         generateSerialNumbersAsync(serialSet);
         log.info("Serial set created successfully: {}", serialSet.getName());
-        return serialSetRepository.findByName(serialSet.getName());}
+        return serialSetMapper.mapEntityToResponseDto(serialSet);}
 
     /**
      * Retrieves all serial sets.
@@ -135,49 +145,58 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @return List of all serial sets
      */
     @Override
-    public List<SerialSet> getAllSerialSets() {
+    public List<SerialSetResponse> getAllSerialSets() {
         log.info("Fetching all serial sets");
         List<SerialSet> serialSets = serialSetRepository.findAll();
         log.info("Fetched {} serial sets", serialSets.size());
-        return serialSets;
+
+        return serialSets.stream()
+                .map(serialSetMapper::mapEntityToResponseDto)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Retrieves a serial set by its ID.
+     * Retrieves a serial set by its name.
      *
-     * @param id The ID of the serial set to retrieve
+     * @param name The ID of the serial set to retrieve
      * @return The retrieved serial set
      */
     @Override
-    public SerialSet getSerialSetById(final Long id) {
-        log.info("Fetching serial set by ID: {}", id);
-        final SerialSet serialSet = serialSetRepository.findById(id)
-                .orElseThrow(() -> new SerialSetException(String.format(NOT_FOUND_ERROR_MESSAGE_TEMPLATE, id)));
+    public SerialSetResponse getSerialSetByName(final String name) {
+        log.info("Fetching serial set: {}", name);
+
+        SerialSet serialSet = serialSetRepository.findByName(name);
+
+        if (serialSet == null) {
+            throw new SerialSetException(String.format(NOT_FOUND_ERROR_MESSAGE_TEMPLATE, name));
+        }
+
         log.info("Fetched serial set: {}", serialSet.getName());
-        return serialSet;
+        return serialSetMapper.mapEntityToResponseDto(serialSet);
     }
 
+
+
     /**
-     * Deletes a serial set by its ID.
+     * Deletes a serial set by its name.
      *
-     * @param id The ID of the serial set to delete
+     * @param name The Name of the serial set to delete
      * @return True if deletion is successful, false otherwise
      */
     @Override
-    public boolean deleteSerialSetById(final Long id) {
-        log.info("Deleting serial set by ID: {}", id);
-        if (id != null) {
-            final Optional<SerialSet> optionalSerialSet = serialSetRepository.findById(id);
-            if (optionalSerialSet.isPresent()) {
-                final SerialSet serialSet = optionalSerialSet.get();
+    public boolean deleteSerialSetByName(final String name) {
+        log.info("Deleting serial set by : {}", name);
+        if (name != null) {
+            final SerialSet serialSet = serialSetRepository.findByName(name);
+            if (serialSet!=null) {
                 final List<SerialNumber> serialNumbers = serialSet.getSerialNumbers();
                 serialNumberRepository.deleteAll(serialNumbers);
-                serialSetRepository.deleteById(id);
-                log.info("Deleted serial set successfully: {}", id);
+                serialSetRepository.delete(serialSet);
+                log.info("Deleted serial set successfully: {}", name);
                 return true;
             }
         }
-        log.warn("Serial set deletion failed. Serial set not found with ID: {}", id);
+        log.warn("Serial set deletion failed. Serial set not found : {}", name);
         return false;
     }
 
@@ -264,12 +283,10 @@ public class SerialSetServiceImpl implements ISerialSetService {
                     .mapToObj(i -> {
                         String generatedSerial;
                         do {
-                            generatedSerial = generateSingleSerial(serialSet,cleanCharacters);
+                            generatedSerial = generateSingleSerial(serialSet, cleanCharacters);
                         } while (!uniqueSerials.add(generatedSerial));
 
-                        final SerialNumber serialNumber = new SerialNumber(generatedSerial);
-                        serialNumber.setSerialSet(serialSet);
-                        return serialNumber;
+                       return new SerialNumber(generatedSerial, serialSet);
                     })
                     .collect(Collectors.toList());
 
@@ -326,7 +343,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
         return true;
     }
     @Override
-    public SerialSet SaveSerialSet(SerialSet serialSet){
+    public SerialSet saveSerialSet(SerialSet serialSet){
         return serialSetRepository.save(serialSet);
     }
 
