@@ -369,6 +369,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
             final SecureRandom secureRandom = new SecureRandom();
             serialSet.setSerialLength(secureRandom.nextInt(maxRandomLength) + 1);
             serialSet.setNumber(true);
-        }return true;
+        }
+        return true;
     }
 }
