@@ -123,11 +123,11 @@ public class SerialSetServiceImpl implements ISerialSetService {
     public SerialSet createSerialSet(final SerialSet serialSet) {
         log.info("Creating serial set: {}", serialSet.getName());
         validateSerialSetConfiguration(serialSet);
-        validateAndSaveSerialSet(serialSet);
+        validateSerialSet(serialSet);
+        SaveSerialSet(serialSet);
         generateSerialNumbersAsync(serialSet);
         log.info("Serial set created successfully: {}", serialSet.getName());
-        return serialSetRepository.findByName(serialSet.getName());
-    }
+        return serialSetRepository.findByName(serialSet.getName());}
 
     /**
      * Retrieves all serial sets.
@@ -190,8 +190,8 @@ public class SerialSetServiceImpl implements ISerialSetService {
     @Async
     @Override
     public CompletableFuture<Void> generateSerialNumbersAsync(final SerialSet serialSet) {
-        log.info("Generating serial numbers asynchronously for serial set: {}", serialSet.getName());
-        return CompletableFuture.runAsync(() -> generateAndSaveSerialNumbers(serialSet))
+        log.info("Generating serial numbers asynchronously for serial set started: {}", serialSet.getName());
+         return CompletableFuture.runAsync(() -> generateSerialNumbers(serialSet))
                 .whenComplete((result, ex) -> {
                     if (ex == null) {
                         log.info("Serial numbers generated successfully for serial set: {}", serialSet.getName());
@@ -250,19 +250,21 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @param serialSet The serial set for which to generate and save serial numbers
      */
     @Override
-    public void generateAndSaveSerialNumbers(final SerialSet serialSet) {
+    public void generateSerialNumbers(final SerialSet serialSet) {
         log.info("Generating and saving serial numbers for serial set: {}", serialSet.getName());
         int remainingSerials = serialSet.getQuantity();
         final Set<String> uniqueSerials = new HashSet<>();
 
         while (remainingSerials > 0) {
             final int currentBatchSize = Math.min(remainingSerials, batchSize);
+            String characters = getCharacterPool(serialSet);
+            final String cleanCharacters = removeExclusions(characters, serialSet.getExclusions());
 
             final List<SerialNumber> generatedSerials = IntStream.range(0, currentBatchSize)
                     .mapToObj(i -> {
                         String generatedSerial;
                         do {
-                            generatedSerial = generateSingleSerial(serialSet);
+                            generatedSerial = generateSingleSerial(serialSet,cleanCharacters);
                         } while (!uniqueSerials.add(generatedSerial));
 
                         final SerialNumber serialNumber = new SerialNumber(generatedSerial);
@@ -287,11 +289,9 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @return The generated serial number
      */
     @Override
-    public String generateSingleSerial(final SerialSet serialSet) {
+    public String generateSingleSerial(final SerialSet serialSet,String characters) {
         log.info("Generating single serial for serial set: {}", serialSet.getName());
-        String characters = getCharacterPool(serialSet);
-        characters = removeExclusions(characters, serialSet.getExclusions());
-        final StringBuilder generatedSerial = new StringBuilder();
+         final StringBuilder generatedSerial = new StringBuilder();
         final SecureRandom secureRandom = new SecureRandom();
 
         for (int i = 0; i < serialSet.getSerialLength(); i++) {
@@ -308,7 +308,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @param serialSet The serial set to validate and save
      */
     @Override
-    public void validateAndSaveSerialSet(final SerialSet serialSet) {
+    public boolean validateSerialSet(final SerialSet serialSet) {
         log.info("Validating and saving serial set: {}", serialSet.getName());
         final SerialSet existingSerialSet = serialSetRepository.findByName(serialSet.getName());
         if (existingSerialSet != null) {
@@ -320,8 +320,14 @@ public class SerialSetServiceImpl implements ISerialSetService {
             log.error("Serial set validation failed. Exceeds maximum limit of serial numbers. Serial set: {}", serialSet.getName());
             throw new SerialSetException(MAX_LIMIT_ERROR_MESSAGE);
         }
-        serialSetRepository.save(serialSet);
+
+
         log.info("Serial set saved successfully: {}", serialSet.getName());
+        return true;
+    }
+    @Override
+    public SerialSet SaveSerialSet(SerialSet serialSet){
+        return serialSetRepository.save(serialSet);
     }
 
     /**
@@ -330,7 +336,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @param serialSet The serial set to validate
      */
     @Override
-    public void validateSerialSetConfiguration(final SerialSet serialSet) {
+    public boolean validateSerialSetConfiguration(final SerialSet serialSet) {
         log.info("Validating configuration of serial set: {}", serialSet.getName());
         if (serialSet.isConfiguration()) {
             if (serialSet.getSerialLength() < minSerialLength || serialSet.getSerialLength() > maxSerialLength) {
@@ -345,6 +351,6 @@ public class SerialSetServiceImpl implements ISerialSetService {
             final SecureRandom secureRandom = new SecureRandom();
             serialSet.setSerialLength(secureRandom.nextInt(maxRandomLength) + 1);
             serialSet.setNumber(true);
-        }
+        }return true;
     }
 }

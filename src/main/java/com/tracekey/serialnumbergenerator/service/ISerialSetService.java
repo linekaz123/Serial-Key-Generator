@@ -21,12 +21,13 @@ public interface ISerialSetService {
 
     String removeExclusions(String input, String exclusions);
 
-    void generateAndSaveSerialNumbers(SerialSet serialSet);
+    void generateSerialNumbers(SerialSet serialSet);
 
-    void validateAndSaveSerialSet(SerialSet serialSet);
+    boolean validateSerialSet(SerialSet serialSet);
+    SerialSet SaveSerialSet(SerialSet serialSet);
 
-    String generateSingleSerial(SerialSet serialSet);
+    String generateSingleSerial(SerialSet serialSet,String characters);
 
-    void validateSerialSetConfiguration(SerialSet serialSet);
+    boolean validateSerialSetConfiguration(SerialSet serialSet);
 
 }

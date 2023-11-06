@@ -15,8 +15,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for {@link SerialSetServiceImpl}.
@@ -77,11 +76,11 @@ class SerialSetServiceImplTest {
 
         lenient().when(serialSetRepository.findByName(NAME)).thenReturn(null);
 
-        assertThrows(SerialSetException.class, () -> serialSetService.validateAndSaveSerialSet(inputSerialSet));
+        assertThrows(SerialSetException.class, () -> serialSetService.validateSerialSet(inputSerialSet));
     }
 
     /**
-     * Testing successful validation and saving of a SerialSet.
+     * Testing successful validation of a SerialSet.
      */
     @Test
     void shouldValidateAndSaveSerialSetSuccessfully() {
@@ -89,7 +88,7 @@ class SerialSetServiceImplTest {
 
         lenient().when(serialSetRepository.findByName(NAME)).thenReturn(null);
 
-        assertDoesNotThrow(() -> serialSetService.validateAndSaveSerialSet(inputSerialSet));
+        assertDoesNotThrow(() -> serialSetService.validateSerialSet(inputSerialSet));
     }
 
     /**
@@ -108,14 +107,15 @@ class SerialSetServiceImplTest {
      * Testing asynchronous generation and saving of serial numbers.
      */
     @Test
-    void shouldGenerateAndSaveSerialNumbersAsync() {
+    void shouldGenerateSerialNumbersAsync() {
+
         SerialSet serialSet = createSerialSet(NAME, 100);
 
-        CompletableFuture<Void> result = serialSetService.generateSerialNumbersAsync(serialSet);
+        CompletableFuture<Void> future = serialSetService.generateSerialNumbersAsync(serialSet);
+        future.join();
 
-        assertNotNull(result);
+        assertEquals(100, serialSet.getSerialNumbers().size());
     }
-
     /**
      * Testing the generation of character pool for serial numbers based on the configuration.
      */
@@ -184,22 +184,6 @@ class SerialSetServiceImplTest {
 
         assertDoesNotThrow(() -> serialSetService.validateSerialSetConfiguration(serialSet));
     }
-
-    /**
-     * Testing asynchronous generation and saving of serial numbers.
-     */
-    @Test
-    void shouldGenerateSerialNumbersAsync() {
-        SerialSet serialSet = createSerialSet("TestSet", 20);
-        when(serialSetRepository.findByName(serialSet.getName())).thenReturn(serialSet);
-        CompletableFuture<Void> result = serialSetService.generateSerialNumbersAsync(serialSet);
-
-        assertDoesNotThrow(() -> result.join()); // Ensure no exceptions occurred during the asynchronous operation
-
-        List<SerialNumber> createdSerialNumbers = serialSet.getSerialNumbers();
-        assertEquals(20, createdSerialNumbers.size());
-    }
-
 
     /**
      * Helper method to create a SerialSet with given name and quantity.
