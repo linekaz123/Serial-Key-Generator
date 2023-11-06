@@ -137,7 +137,8 @@ public class SerialSetServiceImpl implements ISerialSetService {
         saveSerialSet(serialSet);
         generateSerialNumbersAsync(serialSet);
         log.info("Serial set created successfully: {}", serialSet.getName());
-        return serialSetMapper.mapEntityToResponseDto(serialSet);}
+        return serialSetMapper.mapEntityToResponseDto(serialSet);
+    }
 
     /**
      * Retrieves all serial sets.
