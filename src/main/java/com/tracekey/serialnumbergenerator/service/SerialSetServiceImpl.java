@@ -61,7 +61,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
     /**
      * Template for error message when a serial set is not found.
      */
-    private static final String NOT_FOUND_ERROR_MESSAGE_TEMPLATE = "Serial set not found with ID: %d";
+    private static final String NOT_FOUND_ERROR_MESSAGE_TEMPLATE = "Serial set not found with ID: %s";
 
     /**
      * Repository for serial sets.
