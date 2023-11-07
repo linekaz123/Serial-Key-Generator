@@ -15,7 +15,7 @@ public interface ISerialSetService {
 
     SerialSetResponse getSerialSetByName(String name);
 
-    boolean deleteSerialSetByName(String name);
+    void deleteSerialSetByName(String name);
 
     CompletableFuture<Void> generateSerialNumbersAsync(SerialSet serialSet);
 
@@ -25,11 +25,12 @@ public interface ISerialSetService {
 
     void generateSerialNumbers(SerialSet serialSet);
 
-    boolean validateSerialSet(SerialSet serialSet);
-    SerialSet saveSerialSet(SerialSet serialSet);
+    void validateSerialSet(SerialSet serialSet);
+
+    void saveSerialSet(SerialSet serialSet);
 
     String generateSingleSerial(SerialSet serialSet,String characters);
 
-    boolean validateSerialSetConfiguration(SerialSet serialSet);
+    void validateSerialSetConfiguration(SerialSet serialSet);
 
 }

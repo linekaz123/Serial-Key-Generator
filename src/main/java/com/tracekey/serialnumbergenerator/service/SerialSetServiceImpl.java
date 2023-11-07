@@ -137,8 +137,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
         saveSerialSet(serialSet);
         generateSerialNumbersAsync(serialSet);
         log.info("Serial set created successfully: {}", serialSet.getName());
-        return serialSetMapper.mapEntityToResponseDto(serialSet);
-    }
+        return serialSetMapper.mapEntityToResponseDto(serialSet);}
 
     /**
      * Retrieves all serial sets.
@@ -150,7 +149,6 @@ public class SerialSetServiceImpl implements ISerialSetService {
         log.info("Fetching all serial sets");
         List<SerialSet> serialSets = serialSetRepository.findAll();
         log.info("Fetched {} serial sets", serialSets.size());
-
         return serialSets.stream()
                 .map(serialSetMapper::mapEntityToResponseDto)
                 .collect(Collectors.toList());
@@ -165,15 +163,10 @@ public class SerialSetServiceImpl implements ISerialSetService {
     @Override
     public SerialSetResponse getSerialSetByName(final String name) {
         log.info("Fetching serial set: {}", name);
-
-        SerialSet serialSet = serialSetRepository.findByName(name);
-
-        if (serialSet == null) {
-            throw new SerialSetException(String.format(NOT_FOUND_ERROR_MESSAGE_TEMPLATE, name));
-        }
-
-        log.info("Fetched serial set: {}", serialSet.getName());
-        return serialSetMapper.mapEntityToResponseDto(serialSet);
+        return serialSetRepository.findByName(name)
+                .map(serialSetMapper::mapEntityToResponseDto).orElseThrow(() ->
+                        new SerialSetException(String.format(NOT_FOUND_ERROR_MESSAGE_TEMPLATE, name))
+                );
     }
 
 
@@ -182,23 +175,17 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * Deletes a serial set by its name.
      *
      * @param name The Name of the serial set to delete
-     * @return True if deletion is successful, false otherwise
+     *
      */
     @Override
-    public boolean deleteSerialSetByName(final String name) {
-        log.info("Deleting serial set by : {}", name);
-        if (name != null) {
-            final SerialSet serialSet = serialSetRepository.findByName(name);
-            if (serialSet!=null) {
-                final List<SerialNumber> serialNumbers = serialSet.getSerialNumbers();
-                serialNumberRepository.deleteAll(serialNumbers);
-                serialSetRepository.delete(serialSet);
-                log.info("Deleted serial set successfully: {}", name);
-                return true;
-            }
-        }
-        log.warn("Serial set deletion failed. Serial set not found : {}", name);
-        return false;
+    public void deleteSerialSetByName(final String name) {
+        log.info("Deleting serial set by: {}", name);
+        serialSetRepository.findByName(name)
+                .ifPresent(serialSet -> {
+                    serialNumberRepository.deleteAll(serialSet.getSerialNumbers());
+                    serialSetRepository.delete(serialSet);
+                    log.info("Deleted serial set successfully: {}", name);
+                });
     }
 
     /**
@@ -254,15 +241,15 @@ public class SerialSetServiceImpl implements ISerialSetService {
     @Override
     public String removeExclusions(String input, final String exclusions) {
         log.debug("Removing exclusions for input: {}, exclusions: {}", input, exclusions);
-        if (input == null || exclusions == null) {
-            return input;
+        if (input != null && exclusions != null) {
+            for (char exclusion : exclusions.toCharArray()) {
+                input = input.replace(String.valueOf(exclusion), "");
+            }
+            log.debug("Result after removing exclusions: {}", input);
         }
-        for (final char exclusion : exclusions.toCharArray()) {
-            input = input.replace(String.valueOf(exclusion), "");
-        }
-        log.debug("Result after removing exclusions: {}", input);
         return input;
     }
+
 
     /**
      * Generates and saves serial numbers for a serial set.
@@ -295,7 +282,6 @@ public class SerialSetServiceImpl implements ISerialSetService {
 
             remainingSerials -= currentBatchSize;
         }
-
         uniqueSerials.clear();
         log.info("Generated and saved all serial numbers for serial set: {}", serialSet.getName());
     }
@@ -309,7 +295,7 @@ public class SerialSetServiceImpl implements ISerialSetService {
     @Override
     public String generateSingleSerial(final SerialSet serialSet,String characters) {
         log.info("Generating single serial for serial set: {}", serialSet.getName());
-         final StringBuilder generatedSerial = new StringBuilder();
+        final StringBuilder generatedSerial = new StringBuilder();
         final SecureRandom secureRandom = new SecureRandom();
 
         for (int i = 0; i < serialSet.getSerialLength(); i++) {
@@ -326,26 +312,26 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @param serialSet The serial set to validate and save
      */
     @Override
-    public boolean validateSerialSet(final SerialSet serialSet) {
-        log.info("Validating and saving serial set: {}", serialSet.getName());
-        final SerialSet existingSerialSet = serialSetRepository.findByName(serialSet.getName());
-        if (existingSerialSet != null) {
-            log.error("Serial set validation failed. Duplicate name found: {}", serialSet.getName());
-            throw new SerialSetException(DUPLICATE_NAME_ERROR_MESSAGE);
-        }
-        final int totalSerials = serialSet.getQuantity();
+    public void validateSerialSet(final SerialSet serialSet) {
+        String serialSetName = serialSet.getName();
+        log.info("Validating and saving serial set: {}", serialSetName);
+        serialSetRepository.findByName(serialSetName)
+                .ifPresent(existingSet -> {
+                    log.error("Serial set validation failed. Duplicate name found: {}", serialSetName);
+                    throw new SerialSetException(DUPLICATE_NAME_ERROR_MESSAGE);
+                });
+
+        int totalSerials = serialSet.getQuantity();
         if (totalSerials > maxSerialQuantity) {
-            log.error("Serial set validation failed. Exceeds maximum limit of serial numbers. Serial set: {}", serialSet.getName());
+            log.error("Serial set validation failed. Exceeds maximum limit of serial numbers. Serial set: {}", serialSetName);
             throw new SerialSetException(MAX_LIMIT_ERROR_MESSAGE);
         }
-
-
-        log.info("Serial set saved successfully: {}", serialSet.getName());
-        return true;
+        log.info("Serial set saved successfully: {}", serialSetName);
     }
+
     @Override
-    public SerialSet saveSerialSet(SerialSet serialSet){
-        return serialSetRepository.save(serialSet);
+    public void saveSerialSet(final SerialSet serialSet){
+        serialSetRepository.save(serialSet);
     }
 
     /**
@@ -354,22 +340,22 @@ public class SerialSetServiceImpl implements ISerialSetService {
      * @param serialSet The serial set to validate
      */
     @Override
-    public boolean validateSerialSetConfiguration(final SerialSet serialSet) {
+    public void validateSerialSetConfiguration(final SerialSet serialSet) {
         log.info("Validating configuration of serial set: {}", serialSet.getName());
         if (serialSet.isConfiguration()) {
-            if (serialSet.getSerialLength() < minSerialLength || serialSet.getSerialLength() > maxSerialLength) {
-                log.error("Serial set configuration validation failed. Invalid length configuration. Serial set: {}", serialSet.getName());
-                throw new SerialSetException(LENGTH_CONFIG_ERROR_MESSAGE);
-            }
-        } else {
-            if (maxRandomLength == 0) {
-                log.error("Serial set configuration validation failed. maxRandomLength should be a non-zero value. Serial set: {}", serialSet.getName());
-                throw new SerialSetException("maxRandomLength should be a non-zero value");
-            }
-            final SecureRandom secureRandom = new SecureRandom();
-            serialSet.setSerialLength(secureRandom.nextInt(maxRandomLength) + 1);
-            serialSet.setNumber(true);
+            checkSerialLength(serialSet.getSerialLength(),serialSet.getName());
+            return;
         }
-        return true;
+        final SecureRandom secureRandom = new SecureRandom();
+        serialSet.setSerialLength(secureRandom.nextInt(maxRandomLength) + 1)
+                .setNumber(true);
+        }
+
+    private void checkSerialLength(final int serialLength,final String serialSetName) {
+        if (serialLength < minSerialLength || serialLength > maxSerialLength) {
+            log.error("Serial set configuration validation failed. Invalid length configuration. Serial set: {}", serialSetName);
+            throw new SerialSetException(LENGTH_CONFIG_ERROR_MESSAGE);
+        }
     }
 }
+

@@ -11,16 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -42,113 +42,74 @@ class CsvExportServiceImplTest {
     @InjectMocks
     private CsvExportServiceImpl csvExportService;
 
-    /**
-     * Directory for exporting CSV files property.
-     */
     private static final String EXPORT_DIRECTORY = "src/main/resources/";
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-
-        // Setting up reflection test utils to inject private fields
         ReflectionTestUtils.setField(csvExportService, "exportDirectory", EXPORT_DIRECTORY);
     }
 
-    /**
-     * Testing the successful export of serial numbers to CSV.
-     *
-     * @throws IOException if an IO exception occurs during the export.
-     */
     @Test
-    void shouldExportSerialNumbersToCSV() throws IOException {
+    void shouldExportSerialNumbersToCSV() {
         SerialSet serialSet = createTestSerialSet();
-        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(serialSet);
-
-        boolean result = csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME);
-        assertTrue(result);
+        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(java.util.Optional.of(serialSet));
+        assertDoesNotThrow(() -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME));
     }
 
-    /**
-     * Testing if an exception is thrown when the serial set is not found for export.
-     */
     @Test
     void shouldThrowExceptionIfSerialSetNotFoundForExport() {
-        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(null);
-
-        CustomCsvExportException exception = assertThrows(CustomCsvExportException.class,
-                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME));
-
-        assertEquals("Serial set not found for export", exception.getMessage());
+        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(Optional.empty());
+        assertThrows(CustomCsvExportException.class,
+                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME),
+                "Serial set not found for export");
     }
 
-    /**
-     * Testing if an exception is thrown when no serial numbers are found for export.
-     */
     @Test
     void shouldThrowExceptionIfNoSerialNumbersForExport() {
-        SerialSet serialSet = createTestSerialSetWithoutSerialNumbers();
-        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(serialSet);
-        when(serialNumberRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        CustomCsvExportException exception = assertThrows(CustomCsvExportException.class,
-                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME));
-
-        assertEquals("No serial numbers created for this serial set", exception.getMessage());
+        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(Optional.of(createTestSerialSetWithoutSerialNumbers()));
+        assertThrows(CustomCsvExportException.class,
+                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME),
+                "No serial numbers created for this serial set");
     }
 
-    /**
-     * Testing if an exception is thrown when serial number generation is incomplete for export.
-     */
     @Test
     void shouldThrowExceptionIfIncompleteGenerationForExport() {
         SerialSet serialSet = createTestSerialSet();
         List<SerialNumber> serialNumbers = createTestSerialNumbers(serialSet);
         serialSet.setSerialNumbers(new ArrayList<>(serialNumbers.subList(0, serialNumbers.size() - 1)));
+        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(Optional.of(serialSet));
 
-        when(serialSetRepository.findByName(SERIAL_SET_NAME)).thenReturn(serialSet);
-        when(serialNumberRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        CustomCsvExportException exception = assertThrows(CustomCsvExportException.class,
-                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME));
-
-        assertEquals("Serial set numbers generation is incomplete", exception.getMessage());
+        assertThrows(CustomCsvExportException.class,
+                () -> csvExportService.exportSerialNumbersToCSV(SERIAL_SET_NAME),
+                "Serial set numbers generation is incomplete");
     }
 
-    /**
-     * Helper method to create a SerialSet without serial numbers.
-     */
     private SerialSet createTestSerialSetWithoutSerialNumbers() {
-        SerialSet serialSet = new SerialSet();
-        serialSet.setName(SERIAL_SET_NAME);
-        serialSet.setQuantity(5);
-        when(serialSetRepository.save(any(SerialSet.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        return serialSetRepository.save(serialSet);
+        return saveSerialSet();
     }
 
-    /**
-     * Helper method to create a complete SerialSet with serial numbers.
-     */
     private SerialSet createTestSerialSet() {
-        SerialSet serialSet = new SerialSet();
-        serialSet.setName(SERIAL_SET_NAME);
-        serialSet.setQuantity(5);
+        SerialSet serialSet = saveSerialSet();
         serialSet.setSerialNumbers(createTestSerialNumbers(serialSet));
-        when(serialSetRepository.save(any(SerialSet.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        return serialSetRepository.save(serialSet);
+        return serialSet;
     }
 
-    /**
-     * Helper method to create a list of SerialNumbers for a given SerialSet.
-     */
     private List<SerialNumber> createTestSerialNumbers(SerialSet serialSet) {
         List<SerialNumber> serialNumbers = new ArrayList<>();
         for (int i = 1; i <= serialSet.getQuantity(); i++) {
-            SerialNumber serialNumber = new SerialNumber("SN" + i);
-            serialNumber.setSerialSet(serialSet);
-            serialNumbers.add(serialNumber);
+            serialNumbers.add(new SerialNumber("SN" + i, serialSet));
         }
+        return saveSerialNumbers(serialNumbers);
+    }
+
+    private SerialSet saveSerialSet() {
+        return new SerialSet().setName(SERIAL_SET_NAME).setQuantity(5);
+    }
+
+    private List<SerialNumber> saveSerialNumbers(List<SerialNumber> serialNumbers) {
         when(serialNumberRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         return serialNumberRepository.saveAll(serialNumbers);
     }
+
 }

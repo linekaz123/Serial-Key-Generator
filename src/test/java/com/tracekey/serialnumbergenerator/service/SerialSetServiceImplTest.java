@@ -1,7 +1,6 @@
 package com.tracekey.serialnumbergenerator.service;
 
 import com.tracekey.serialnumbergenerator.conf.TestDatabaseConfig;
-import com.tracekey.serialnumbergenerator.entity.SerialNumber;
 import com.tracekey.serialnumbergenerator.entity.SerialSet;
 import com.tracekey.serialnumbergenerator.exception.SerialSetException;
 import com.tracekey.serialnumbergenerator.repository.SerialSetRepository;
@@ -10,16 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 /**
  * Test class for {@link SerialSetServiceImpl}.
@@ -79,21 +77,20 @@ class SerialSetServiceImplTest {
      */
     @Test
     void shouldThrowExceptionIfExceedsMaxQuantityOnValidation() {
-        SerialSet inputSerialSet = createSerialSet(NAME, 15000);
-
-        lenient().when(serialSetRepository.findByName(NAME)).thenReturn(null);
+        SerialSet inputSerialSet = createSerialSet(15000);
+        when(serialSetRepository.findByName(NAME)).thenReturn(Optional.empty());
 
         assertThrows(SerialSetException.class, () -> serialSetService.validateSerialSet(inputSerialSet));
     }
+
 
     /**
      * Testing successful validation of a SerialSet.
      */
     @Test
-    void shouldValidateAndSaveSerialSetSuccessfully() {
-        SerialSet inputSerialSet = createSerialSet(NAME, 5);
-
-        lenient().when(serialSetRepository.findByName(NAME)).thenReturn(null);
+    void shouldValidateSerialSetSuccessfully() {
+        SerialSet inputSerialSet = createSerialSet(5);
+        when(serialSetRepository.findByName(NAME)).thenReturn(Optional.empty());
 
         assertDoesNotThrow(() -> serialSetService.validateSerialSet(inputSerialSet));
     }
@@ -103,7 +100,7 @@ class SerialSetServiceImplTest {
      */
     @Test
     void shouldThrowExceptionIfInvalidSerialLengthOnValidation() {
-        SerialSet inputSerialSet = createConfiguredSerialSet(NAME, 5);
+        SerialSet inputSerialSet = createConfiguredSerialSet();
 
         lenient().when(serialSetRepository.findByName(NAME)).thenReturn(null);
 
@@ -180,45 +177,39 @@ class SerialSetServiceImplTest {
     }
 
     /**
-     * Helper method to create a SerialSet with given name and quantity.
+     * Helper method to create a SerialSet with given quantity.
      */
-    private SerialSet createSerialSet(String name, int quantity) {
-        SerialSet serialSet = new SerialSet();
-        serialSet.setName(name);
-        serialSet.setQuantity(quantity);
-        return serialSet;
+    private SerialSet createSerialSet(int quantity) {
+        return new SerialSet()
+                .setName(SerialSetServiceImplTest.NAME)
+                .setQuantity(quantity);
     }
 
     /**
-     * Helper method to create a configured SerialSet with given name and serial length.
+     * Helper method to create a configured SerialSet
      */
-    private SerialSet createConfiguredSerialSet(String name, int serialLength) {
-        SerialSet serialSet = createSerialSet(name, 0);
-        serialSet.setConfiguration(true);
-        serialSet.setSerialLength(serialLength);
-        serialSet.setNumber(true);
-        return serialSet;
+    private SerialSet createConfiguredSerialSet() {
+       return createSerialSet(5)
+               .setConfiguration(true)
+               .setSerialLength(5)
+               .setNumber(true);
     }
 
     /**
      * Helper method to create a SerialSet with configured character pool.
      */
     private SerialSet createCharacterPoolSerialSet() {
-        SerialSet serialSet = new SerialSet();
-        serialSet.setNumber(true);
-        serialSet.setLowerCase(true);
-        serialSet.setUpperCase(true);
-        return serialSet;
+        return new SerialSet().setNumber(true)
+                .setLowerCase(true)
+                .setUpperCase(true);
     }
 
     /**
      * Helper method to create a configured SerialSet with given configuration and serial length.
      */
     private SerialSet createConfiguredSerialSet(boolean configuration, int serialLength) {
-        SerialSet serialSet = new SerialSet();
-        serialSet.setConfiguration(configuration);
-        serialSet.setSerialLength(serialLength);
-        return serialSet;
+        return new SerialSet().setConfiguration(configuration).setSerialLength(serialLength);
+
     }
 
 }

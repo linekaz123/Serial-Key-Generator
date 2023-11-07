@@ -14,6 +14,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Implementation of the CsvExportService interface for exporting serial numbers to CSV.
@@ -30,7 +32,6 @@ public class CsvExportServiceImpl implements ICsvExportService {
 
     private static final String EXPORT_ERROR_MESSAGE = "Error exporting serial numbers to CSV";
     private static final String NOT_FOUND_ERROR_MESSAGE = "Serial set not found for export";
-    private static final String NO_SERIAL_NUMBERS_ERROR_MESSAGE = "No serial numbers created for this serial set";
     private static final String INCOMPLETE_GENERATION_ERROR_MESSAGE = "Serial set numbers generation is incomplete";
 
     private final SerialSetRepository serialSetRepository;
@@ -43,22 +44,22 @@ public class CsvExportServiceImpl implements ICsvExportService {
      * Exports serial numbers to CSV for a given serial set name.
      *
      * @param serialSetName The name of the serial set to export
-     * @return True if export is successful, false otherwise
+     *
      */
     @Override
-    public boolean exportSerialNumbersToCSV(String serialSetName) {
+    public void exportSerialNumbersToCSV(String serialSetName) {
         log.info("Exporting serial numbers to CSV for serial set: {}", serialSetName);
-        SerialSet serialSet = getValidSerialSet(serialSetName);
 
         try {
+            SerialSet serialSet = getValidSerialSet(serialSetName);
             exportToCsv(serialSet);
             log.info("Serial numbers exported to CSV successfully for serial set: {}", serialSetName);
-            return true;
         } catch (IOException e) {
             log.error("Error exporting serial numbers to CSV for serial set: {}", serialSetName, e);
             throw new CustomCsvExportException(EXPORT_ERROR_MESSAGE, e);
         }
     }
+
 
     /**
      * Retrieves a valid serial set based on the provided serial set name.
@@ -68,26 +69,25 @@ public class CsvExportServiceImpl implements ICsvExportService {
      */
     private SerialSet getValidSerialSet(String serialSetName) {
         log.info("Fetching and validating serial set for export: {}", serialSetName);
-        SerialSet serialSet = serialSetRepository.findByName(serialSetName);
 
-        if (serialSet == null) {
+        Optional<SerialSet> optionalSerialSet = serialSetRepository.findByName(serialSetName);
+
+        SerialSet serialSet = optionalSerialSet.orElseThrow(() -> {
             log.error("Serial set validation failed. Not found for export: {}", serialSetName);
-            throw new CustomCsvExportException(NOT_FOUND_ERROR_MESSAGE);
-        }
+            return new CustomCsvExportException(NOT_FOUND_ERROR_MESSAGE);
+        });
 
-        if (serialSet.getSerialNumbers() == null || serialSet.getSerialNumbers().isEmpty()) {
-            log.error("Serial set validation failed. No serial numbers for export: {}", serialSetName);
-            throw new CustomCsvExportException(NO_SERIAL_NUMBERS_ERROR_MESSAGE);
-        }
+        List<SerialNumber> serialNumbers = serialSet.getSerialNumbers();
+        int quantity = serialSet.getQuantity();
 
-        if (serialSet.getSerialNumbers().size() < serialSet.getQuantity()) {
-            log.error("Serial set validation failed. Incomplete generation for export: {}", serialSetName);
+        if (serialNumbers == null || serialNumbers.size() < quantity) {
             throw new CustomCsvExportException(INCOMPLETE_GENERATION_ERROR_MESSAGE);
         }
 
         log.info("Serial set fetched and validated successfully for export: {}", serialSetName);
         return serialSet;
     }
+
 
     /**
      * Exports serial numbers to a CSV file for the given serial set.
